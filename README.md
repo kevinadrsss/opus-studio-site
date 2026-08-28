@@ -3,11 +3,18 @@
 音樂教室 Opus Studio 的網站設計稿。單一 HTML 檔，所有圖片以 base64 內嵌，
 不需要伺服器、不需要建置流程，雙擊即可用瀏覽器開啟。
 
+## 上線位置
+
+以 GitHub Pages 架設，來源為 `main` 分支根目錄（與 Kevin_Portfolio 相同設定）。
+
+https://kevinadrsss.github.io/opus-studio-site/
+
 ## 檔案
 
 | 檔案 | 說明 |
 |---|---|
-| `opus-studio.html` | 完整網站，含首頁與預約分頁 |
+| `index.html` | 完整網站，含首頁與預約分頁 |
+| `.nojekyll` | 關閉 Jekyll 處理，讓 Pages 直接輸出靜態檔 |
 
 ## 頁面
 
