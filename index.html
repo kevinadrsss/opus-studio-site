@@ -183,7 +183,11 @@ fieldset legend{font-size:14.5px;color:#3a352d;margin-bottom:16px}
   padding:19px 52px;font-size:12.5px;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;transition:.25s}
 .btn-solid:hover{background:var(--gold-dk);border-color:var(--gold-dk)}
 .fine{text-align:center;font-size:12.5px;color:#9a9287;line-height:1.9}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 .sent{grid-column:1/-1;border:1px solid var(--gold);background:#fff;padding:34px;display:none}
+.sent.ok{border-color:var(--gold);background:rgba(201,168,106,.08);text-align:center;padding:52px 40px}
+.sent.ok h4{color:var(--gold-dk);font-size:30px}
+.btn-solid[disabled]{opacity:.55;cursor:default}
 .sent h4{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:400;margin-bottom:10px}
 .sent p{color:var(--muted);font-size:14.5px;margin-bottom:16px}
 .sent pre{background:var(--cream-2);border:1px solid var(--line);padding:18px;font-size:12.5px;
@@ -596,6 +600,11 @@ footer a:hover{color:var(--gold-dk);border-color:var(--gold)}
           <textarea id="f-notes" name="Notes"></textarea>
         </div>
 
+        <div class="hp" aria-hidden="true">
+          <label for="f-website">Website</label>
+          <input id="f-website" name="website" type="text" tabindex="-1" autocomplete="off">
+        </div>
+
         <div class="sent" id="sent-box">
           <h4>已為你開啟郵件</h4>
           <p>如果郵件軟體沒有自動跳出，可以複製下面的內容，直接寄到 <a href="mailto:opusstudio.nyc@gmail.com" style="color:var(--gold-dk)">opusstudio.nyc@gmail.com</a>。</p>
@@ -649,6 +658,13 @@ footer a:hover{color:var(--gold-dk);border-color:var(--gold)}
 (function(){
   var STUDIO_EMAIL = 'opusstudio.nyc@gmail.com';
 
+  /* ------------------------------------------------------------------
+     表單後端（Google Apps Script Web App）
+     部署完成後，把 /apps-script/SETUP.md 步驟 4 取得的網址貼進來。
+     留空的話表單會退回 mailto 模式（開啟訪客自己的郵件軟體）。
+     ------------------------------------------------------------------ */
+  var ENDPOINT = '';
+
   /* ---- 兩個頁面之間切換（單檔 hash 路由） ---- */
   var home = document.getElementById('page-home'), book = document.getElementById('page-book');
   function route(){
@@ -668,8 +684,23 @@ footer a:hover{color:var(--gold-dk);border-color:var(--gold)}
   var box = document.getElementById('sent-box'), pre = document.getElementById('sent-text'),
       link = document.getElementById('mail-link'), copy = document.getElementById('copy-btn');
 
+  var v = function(id){ var e = document.getElementById(id); return e ? e.value.trim() : ''; };
+
+  function payload(){
+    var goals = Array.prototype.filter.call(form.querySelectorAll('input[name="goal"]'), function(c){ return c.checked; })
+                  .map(function(c){ return c.value; });
+    return {
+      name: v('f-name'), age: v('f-age'), parent: v('f-parent'),
+      email: v('f-email'), phone: v('f-phone'),
+      instrument: v('f-inst'), lessonType: v('f-type'), level: v('f-level'),
+      goals: goals.join(', '),
+      length: v('f-length'), days: v('f-days'), start: v('f-start'), notes: v('f-notes'),
+      website: v('f-website'),                       /* 蜜罐欄位，人類不會填 */
+      page: location.href
+    };
+  }
+
   function compose(){
-    var v = function(id){ var e = document.getElementById(id); return e ? e.value.trim() : ''; };
     var goals = Array.prototype.filter.call(form.querySelectorAll('input[name="goal"]'), function(c){ return c.checked; })
                   .map(function(c){ return c.value; });
     var rows = [
@@ -685,6 +716,35 @@ footer a:hover{color:var(--gold-dk);border-color:var(--gold)}
     return { subject: 'Trial Lesson Request — ' + (v('f-name') || 'New enquiry'), body: body };
   }
 
+  var submitBtn = form.querySelector('button[type="submit"]');
+  var btnLabel = submitBtn ? submitBtn.textContent : '';
+
+  function showFallback(){
+    var m = compose();
+    var url = 'mailto:' + STUDIO_EMAIL + '?subject=' + encodeURIComponent(m.subject) + '&body=' + encodeURIComponent(m.body);
+    box.className = 'sent';
+    box.querySelector('h4').textContent = '已為你開啟郵件';
+    box.querySelector('p').innerHTML = '如果郵件軟體沒有自動跳出，可以複製下面的內容，直接寄到 '
+      + '<a href="mailto:' + STUDIO_EMAIL + '" style="color:var(--gold-dk)">' + STUDIO_EMAIL + '</a>。';
+    pre.textContent = 'To: ' + STUDIO_EMAIL + '\nSubject: ' + m.subject + '\n\n' + m.body;
+    pre.style.display = ''; box.querySelector('.acts').style.display = '';
+    link.href = url;
+    box.style.display = 'block';
+    box.scrollIntoView({block:'center', behavior:'smooth'});
+    try { window.location.href = url; } catch(err){}
+  }
+
+  function showThanks(){
+    box.className = 'sent ok';
+    box.querySelector('h4').textContent = 'Thank you — your request has been sent.';
+    box.querySelector('p').textContent = '我們已收到你的體驗課申請，會盡快以 Email 與你聯絡安排時間。';
+    pre.style.display = 'none';
+    box.querySelector('.acts').style.display = 'none';
+    box.style.display = 'block';
+    box.scrollIntoView({block:'center', behavior:'smooth'});
+    form.reset();
+  }
+
   form.addEventListener('submit', function(e){
     e.preventDefault();
     var missing = Array.prototype.filter.call(form.querySelectorAll('[required]'), function(f){ return !f.value.trim(); });
@@ -694,13 +754,26 @@ footer a:hover{color:var(--gold-dk);border-color:var(--gold)}
       missing.forEach(function(f){ f.style.borderColor = '#c0785a'; });
       return;
     }
-    var m = compose();
-    var url = 'mailto:' + STUDIO_EMAIL + '?subject=' + encodeURIComponent(m.subject) + '&body=' + encodeURIComponent(m.body);
-    pre.textContent = 'To: ' + STUDIO_EMAIL + '\nSubject: ' + m.subject + '\n\n' + m.body;
-    link.href = url;
-    box.style.display = 'block';
-    box.scrollIntoView({block:'center', behavior:'smooth'});
-    try { window.location.href = url; } catch(err){}
+
+    /* 沒設定後端 → 退回 mailto */
+    if (!ENDPOINT){ showFallback(); return; }
+
+    if (submitBtn){ submitBtn.disabled = true; submitBtn.textContent = 'Sending…'; }
+
+    fetch(ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },  /* 用 text/plain 避開 CORS preflight */
+      body: JSON.stringify(payload())
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if (res && res.ok) showThanks();
+      else throw new Error(res && res.error ? res.error : 'unknown');
+    })
+    .catch(function(){ showFallback(); })   /* 後端掛掉也不讓訪客白填 */
+    .then(function(){
+      if (submitBtn){ submitBtn.disabled = false; submitBtn.textContent = btnLabel; }
+    });
   });
 
   form.addEventListener('input', function(e){ if (e.target.style) e.target.style.borderColor = ''; });

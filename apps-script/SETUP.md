@@ -1,0 +1,104 @@
+# 表單後端設定（約 10 分鐘，只需做一次）
+
+做完之後，訪客按下 Request a Trial Lesson 會：
+
+1. 資料寫進 Google Sheet，接洽狀態預設「新進詢問」
+2. `opusstudio.nyc@gmail.com` 收到通知信，**按回覆就直接回給家長**
+3. 家長收到一封自動確認信
+
+全程不需要訪客的郵件軟體，也不需要第三方付費服務。
+
+---
+
+## 步驟 1 — 建立試算表
+
+用 `opusstudio.nyc@gmail.com` 登入 Google，開一份新的 Google 試算表，
+命名為 `Opus Studio — Trial Lesson Enquiries`。
+
+## 步驟 2 — 貼上程式
+
+在該試算表選 **擴充功能 → Apps Script**。
+
+把編輯器裡預設的 `function myFunction() {}` 全部刪掉，
+貼上同資料夾的 `Code.gs` 全部內容，按存檔。
+
+## 步驟 3 — 初始化工作表
+
+編輯器上方的函式下拉選單選 **`setupSheet`**，按 **執行**。
+
+第一次會跳出授權要求：選你的帳號 → 「進階」→「前往 ...（不安全）」→ 允許。
+這是因為程式沒有經過 Google 商店審核，是你自己寫的腳本，正常現象。
+
+執行完回試算表看，會多出一個 `Enquiries` 工作表，標題列已建好：
+
+| 時間戳記 | 表單欄位 ×13 | 接洽狀態 | 進度 | 服務範圍 | 負責老師 | 下次跟進日 | 內部備註 |
+|---|---|---|---|---|---|---|---|
+
+深色底的六欄是給你手動維護的。「接洽狀態」和「服務範圍」有下拉選單：
+
+- **接洽狀態**：新進詢問 / 已回覆 / 已排體驗課 / 體驗完成 / 已成交 / 未成交 / 暫緩
+- **服務範圍**：Private Lesson / Online Lesson / Practice Coaching / Group Class / Chamber Music
+
+選項要改的話，直接改 `Code.gs` 最上面的 `STATUS_OPTIONS` 和 `SCOPE_OPTIONS` 再跑一次 `setupSheet`。
+
+## 步驟 4 — 部署成 Web App
+
+編輯器右上角 **部署 → 新增部署作業**：
+
+| 欄位 | 選項 |
+|---|---|
+| 類型 | 網頁應用程式 |
+| 執行身分 | **我**（這樣才能用你的 Gmail 寄信） |
+| 誰可以存取 | **所有人** |
+
+按部署，複製產生的**網頁應用程式網址**（長得像
+`https://script.google.com/macros/s/AKfycb.../exec`）。
+
+> 「所有人」指的是任何人都能送出這張表單，不是任何人都能看你的試算表。
+> 試算表本身仍然只有你看得到。
+
+## 步驟 5 — 接回網站
+
+打開 `index.html`，找到最底下這一行（約在第 655 行）：
+
+```js
+var ENDPOINT = '';
+```
+
+把步驟 4 的網址貼進去：
+
+```js
+var ENDPOINT = 'https://script.google.com/macros/s/AKfycb.../exec';
+```
+
+存檔後 commit 並 push，GitHub Pages 約一分鐘後自動更新。
+
+---
+
+## 驗證
+
+打開 https://kevinadrsss.github.io/opus-studio-site/#book 填一筆假資料送出。
+
+- 按鈕變 `Sending…`，接著出現金色的 Thank you 區塊 → 成功
+- 試算表多一列，接洽狀態是「新進詢問」
+- Gmail 收到通知信，試著按回覆，收件人應該是你剛才填的測試信箱
+
+## 故障排除
+
+**送出後出現「已為你開啟郵件」而不是 Thank you**
+表示後端呼叫失敗，程式自動退回 mailto 模式（刻意設計，不讓訪客白填）。
+檢查 `ENDPOINT` 有沒有貼錯、部署時「誰可以存取」是不是選了「所有人」。
+
+**通知信沒收到**
+Apps Script 用 `MailApp`，免費帳號每天 100 封上限。
+到 Apps Script 編輯器左側「執行項目」看有沒有錯誤紀錄。
+
+**改了 Code.gs 之後沒生效**
+Apps Script 要重新部署才會生效：部署 → 管理部署作業 → 編輯（鉛筆）→ 版本選「新版本」→ 部署。
+網址不會變。
+
+## 之後想擴充
+
+- **自動建 Google 日曆邀請**：在 `doPost` 加 `CalendarApp.createEvent`
+- **Slack / LINE 通知**：用 `UrlFetchApp.fetch` 打 webhook
+- **跟進提醒**：在試算表加時間驅動的觸發程序，掃「下次跟進日」是今天的列寄信提醒自己
