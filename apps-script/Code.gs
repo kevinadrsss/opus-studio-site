@@ -10,6 +10,8 @@
  */
 
 // ── 設定 ────────────────────────────────────────────────────────────
+var SHEET_ID     = '';                          // 獨立專案必填：試算表網址中 /d/ 與 /edit 之間那串
+                                                //（若程式是從試算表「擴充功能→Apps Script」建立的，留空即可）
 var SHEET_NAME   = 'Enquiries';                 // 資料要寫進哪個工作表
 var NOTIFY_TO    = 'opusstudio.nyc@gmail.com';  // 通知信寄給誰
 var STUDIO_NAME  = 'Opus Studio';
@@ -80,8 +82,13 @@ function appendRow(data) {
   sheet.appendRow(row);
 }
 
+/** 取得試算表：優先用 SHEET_ID，沒設就用綁定的那份 */
+function book() {
+  return SHEET_ID ? SpreadsheetApp.openById(SHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();
+}
+
 function getSheet() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = book();
   var sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) { sheet = ss.insertSheet(SHEET_NAME); writeHeaders(sheet); }
   if (sheet.getLastRow() === 0) writeHeaders(sheet);
@@ -98,7 +105,7 @@ function notifyStudio(data) {
   var body = '收到一筆新的體驗課申請。\n\n'
            + lines.join('\n')
            + '\n\n直接回覆這封信就會寄到 ' + data.email + '。'
-           + '\n試算表：' + SpreadsheetApp.getActiveSpreadsheet().getUrl();
+           + '\n試算表：' + book().getUrl();
 
   MailApp.sendEmail({
     to: NOTIFY_TO,
@@ -138,7 +145,7 @@ function replyToEnquirer(data) {
  * 在編輯器上方選這個函式再按「執行」。
  */
 function setupSheet() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = book();
   var sheet = ss.getSheetByName(SHEET_NAME) || ss.insertSheet(SHEET_NAME);
   writeHeaders(sheet);
 
@@ -154,7 +161,8 @@ function setupSheet() {
   applyDropdown(sheet, statusCol, STATUS_OPTIONS);
   applyDropdown(sheet, scopeCol,  SCOPE_OPTIONS);
 
-  SpreadsheetApp.getUi().alert('工作表「' + SHEET_NAME + '」已建立完成，可以開始接收表單了。');
+  Logger.log('工作表「' + SHEET_NAME + '」已建立完成：' + ss.getUrl());
+  return '工作表「' + SHEET_NAME + '」已建立完成。';
 }
 
 function writeHeaders(sheet) {
