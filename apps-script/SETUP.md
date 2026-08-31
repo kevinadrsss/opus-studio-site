@@ -15,7 +15,33 @@
 | Google 帳號 | `opusstudio.nyc@gmail.com` |
 | 試算表 | Opus Studio — Trial Lesson Enquiries（工作表 `Enquiries`） |
 | Apps Script 專案 | Opus Studio Trial Lesson Form（獨立專案，非綁定試算表） |
-| 部署 | Web app，執行身分 `Me`，存取權 `Anyone`，Version 1 |
+| 部署 | Web app，執行身分 `Me`，存取權 `Anyone` |
+
+## 試算表欄位
+
+`時間戳記` → 表單 13 欄 → `接洽狀態` `進度` → **5 個勾選框** → `服務範圍` `負責老師` `下次跟進日` `內部備註`
+
+- **接洽狀態**：下拉選單，依內容自動變底色
+- **進度**：公式欄，依右邊勾選框自動算出進度條與百分比（勾兩項 = `██░░░ 40%`），不要手動編輯
+- **勾選框**：已回覆 / 已排時間 / 體驗完成 / 已報價 / 已成交
+
+要改任務項目，編輯 `Code.gs` 的 `TASKS` 再重新部署並跑一次 setup。
+
+## 維護網址
+
+| 用途 | 網址 |
+|---|---|
+| 健康檢查 | Web app 網址 |
+| 重建格式 | Web app 網址 + `?setup=<SETUP_TOKEN>` |
+| 清空資料並重建 | Web app 網址 + `?reset=<SETUP_TOKEN>` |
+
+`SETUP_TOKEN` 在部署版的 `Code.gs` 最上面，repo 這份留空。
+
+> 用網址觸發是因為編輯器的函式選單在這個環境很難操作。
+
+> **注意**：`setupSheet` 只在「真的有資料的列」鋪勾選框與公式。
+> 千萬不要改成預先鋪滿整欄——`appendRow` 是接在最後一列有內容的下面，
+> 預鋪公式會讓新表單資料被寫到幾百列之外。
 
 > 程式用 `SHEET_ID` 指向試算表，所以是獨立專案。
 > repo 裡的 `Code.gs` 那一行留空，實際部署的版本才填了 ID——
