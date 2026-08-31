@@ -1,6 +1,6 @@
-# 表單後端設定（約 10 分鐘，只需做一次）
+# 表單後端（已部署完成 2026-08-31）
 
-做完之後，訪客按下 Request a Trial Lesson 會：
+訪客按下 Request a Trial Lesson 之後：
 
 1. 資料寫進 Google Sheet，接洽狀態預設「新進詢問」
 2. `opusstudio.nyc@gmail.com` 收到通知信，**按回覆就直接回給家長**
@@ -8,7 +8,37 @@
 
 全程不需要訪客的郵件軟體，也不需要第三方付費服務。
 
+## 目前設定
+
+| 項目 | 內容 |
+|---|---|
+| Google 帳號 | `opusstudio.nyc@gmail.com` |
+| 試算表 | Opus Studio — Trial Lesson Enquiries（工作表 `Enquiries`） |
+| Apps Script 專案 | Opus Studio Trial Lesson Form（獨立專案，非綁定試算表） |
+| 部署 | Web app，執行身分 `Me`，存取權 `Anyone`，Version 1 |
+
+> 程式用 `SHEET_ID` 指向試算表，所以是獨立專案。
+> repo 裡的 `Code.gs` 那一行留空，實際部署的版本才填了 ID——
+> 這個 repo 是公開的，不把檔案 ID 放進來。
+
+## 修改程式之後要重新部署
+
+Apps Script 改完存檔不會自動生效，必須：
+
+**部署 → 管理部署作業 → 編輯（鉛筆圖示）→ 版本選「新版本」→ 部署**
+
+網址不會變，`index.html` 不用動。
+
+## 常用連結
+
+- 試算表與 Apps Script 專案都在 `opusstudio.nyc@gmail.com` 的雲端硬碟
+- 健康檢查：用瀏覽器直接開 Web app 網址，應該回 `{"ok":true,...}`
+
 ---
+
+# 附錄：從零開始的部署步驟
+
+以下保留完整流程，供日後重建或移交給客戶時參考。
 
 ## 步驟 1 — 建立試算表
 
